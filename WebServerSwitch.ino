@@ -1,229 +1,113 @@
 //EthernetSwitching02
-
 //http://www.instructables.com/id/Ethernet-Switching-with-Arduino/?ALLSTEPS
-
 //Al strings are in FLASH so it fit also Arduino UNO RAM
-
 #include <Ethernet.h>
-
 #include <SPI.h>
-
 #include <EEPROM.h>
-
 ////////////////////////////////////////////////////////////////////////
-
 //CONFIGURATION
-
 ////////////////////////////////////////////////////////////////////////
-
 //IP manual settings
-
-byte ip[] = {
-
-192, 168, 137, 100 }; //Manual setup only
-
-byte gateway[] = {
-
-192, 168, 1, 1 }; //Manual setup only
-
-byte subnet[] = {
-
-255, 255, 255, 0 }; //Manual setup only
-
-byte mac[] = {
-
-0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+byte ip[] = {192, 168, 137, 100 }; //Manual setup only
+byte gateway[] = {192, 168, 1, 1 }; //Manual setup only
+byte subnet[] = {255, 255, 255, 0 }; //Manual setup only
+byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 //Ethernet Port
-
 EthernetServer server = EthernetServer(80); //default html port 80
-
 //The number of outputs going to be switched.
-
 int outputQuantity = 12; //should not exceed 10
-
 //Invert the output of the leds
-
 boolean outputInverted = false; //true or false
-
 // This is done in case the relay board triggers the relay on negative, rather then on positive supply
-
 //Html page refresh
-
 int refreshPage = 15; //default is 10sec.
-
 //Beware that if you make it refresh too fast, the page could become inacessable.
-
 //Display or hide the "Switch on all Pins" buttons at the bottom of page
-
 int switchOnAllPinsButton = false; //true or false
-
-int outputAddress[16] = {
-
-2,3,4,5,6,7,8,9,10,11,12,13,13,13,13,13}; //Allocate 10 spaces and name the output pin address.
-
-String buttonText[16] = {
-
-"01. TEST01","02. TEST02","03. TEST03","04. TEST04","05. TEST05","06. TEST06","07. TEST07","08. TEST08","09. TEST09","10. TEST10","11. TEST11","12. TEST12","13. TEST13","14. TEST14","15. TEST15","16. TEST16"};
+int outputAddress[16] = {2,3,4,5,6,7,8,9,10,11,12,13,13,13,13,13}; //Allocate 10 spaces and name the output pin address.
+String buttonText[16] = {"01. TEST01","02. TEST02","03. TEST03","04. TEST04","05. TEST05","06. TEST06","07. TEST07","08. TEST08","09. TEST09","10. TEST10","11. TEST11","12. TEST12","13. TEST13","14. TEST14","15. TEST15","16. TEST16"};
 
 // Set the output to retain the last status after power recycle.
-
 int retainOutputStatus[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//1-retain the last status. 0-will be off after power cut.
-
 ////////////////////////////////////////////////////////////////////////
-
 //VARIABLES DECLARATION
-
 ////////////////////////////////////////////////////////////////////////
-
 int outp = 0;
-
 boolean printLastCommandOnce = false;
-
 boolean printButtonMenuOnce = false;
-
 boolean initialPrint = true;
-
 String allOn = "";
-
 String allOff = "";
-
 boolean reading = false;
-
 boolean outputStatus[16]; //Create a boolean array for the maximum ammount.
-
 String rev = "V4.06b";
-
 unsigned long timeConnectedAt;
-
 boolean writeToEeprom = false;
-
 /////////////////////////////////////////////////
-
 // Temperature Related Reading
-
 const int tempInPin = A1;
-
 int tempInValue = 0; //temperature read
-
 int tempScaleOutValue = 0; //temperature formatted
-
 int tempOutValue = 0; //temperature formatted
-
 float tempOutDeg = 0.0;
 
 ////////////////////////////////////////////////////////////////////////
-
 //RUN ONCE
-
 ////////////////////////////////////////////////////////////////////////
-
 //Beginning of Program
-
 void setup(){
-
-Serial.begin(9600);
-
-delay(1000);
-
-Serial.println(F("EthernetSwitching01"));
-
-delay(1000);
-
-Serial.println(F("initEepromValues"));
-
-initEepromValues();
-
-delay(1000);
-
-Serial.println(F("readEepromValues"));
-
-readEepromValues();
-
-delay(1000);
-
-//Set pins as Outputs
-
-boolean currentState = false;
-
-int var;
-
-for (int i = 0; i < outputQuantity; i++){
-
-pinMode(outputAddress[i], OUTPUT);
-
-var = outputAddress[i];
-
-//Switch all outputs to either on or off on Startup
-
-if(outputInverted == true) {
-
-//digitalWrite(outputAddress[var], HIGH);
-
-if(outputStatus[i] == 0){
-
-currentState = true;
-
-}
-
-else{
-
-currentState = false;
-
-} //check outputStatus if off, switch output accordingly
-
-digitalWrite(var, currentState);
-
-}
-
-else{
-
-//digitalWrite(outputAddress[var], LOW);
-
-if(outputStatus[i] == 0){
-
-currentState = false;
-
-}
-
-else{
-
-currentState = true;
-
-}//check outputStatus if off, switch output accordingly
-
-digitalWrite(var, currentState);
-
-}
-
-}
-
+	Serial.begin(9600);
+	delay(1000);
+	Serial.println(F("EthernetSwitching01"));
+	delay(1000);
+	Serial.println(F("initEepromValues"));
+	initEepromValues();
+	delay(1000);
+	Serial.println(F("readEepromValues"));
+	readEepromValues();
+	delay(1000);
+	//Set pins as Outputs
+	boolean currentState = false;
+	int var;
+	for (int i = 0; i < outputQuantity; i++){
+		pinMode(outputAddress[i], OUTPUT);
+		var = outputAddress[i];
+		//Switch all outputs to either on or off on Startup
+		if(outputInverted == true) {
+			//digitalWrite(outputAddress[var], HIGH);
+			if(outputStatus[i] == 0){
+				currentState = true;
+				}
+			else{
+				currentState = false;
+				} //check outputStatus if off, switch output accordingly
+				digitalWrite(var, currentState);
+			}
+		else{
+			//digitalWrite(outputAddress[var], LOW);
+			if(outputStatus[i] == 0) {
+				currentState = false;
+			}
+			else{
+				currentState = true;
+				}//check outputStatus if off, switch output accordingly
+				digitalWrite(var, currentState);
+			}
+	}
 //Setting up the IP address. Comment out the one you dont need.
-
 //Ethernet.begin(mac); //for DHCP address. (Address will be printed to serial.)
-
 //Ethernet.begin(mac, ip, gateway, subnet); //for manual setup. (Address is the one configured above.)
-
 Serial.println(F("Trying to get an IP address using DHCP"));
-
 if (Ethernet.begin(mac) == 0) {
-
 Serial.println(F("Failed to configure Ethernet using DHCP"));
-
 // initialize the ethernet device not using DHCP:
-
 Ethernet.begin(mac, ip, gateway, subnet);
-
 }
-
 server.begin();
-
 Serial.print(F("Server started at "));
-
 Serial.println(Ethernet.localIP());
-
 }
-
 ////////////////////////////////////////////////////////////////////////
 
 //LOOP
